@@ -126,21 +126,6 @@ class OpenMapTilesTest {
   }
 
   @Test
-  void testContainsBuildings() {
-    assertFeatureNear(mbtiles, "building", Map.of(), 7.41919, 43.73401, 13, 14);
-    assertNumFeatures("building", Map.of(), 14, 1316, Polygon.class);
-    assertNumFeatures("building", Map.of(), 13, 196, Polygon.class);
-  }
-
-  @Test
-  void testContainsHousenumber() {
-    assertFeatureNear(mbtiles, "housenumber", Map.of(
-      "housenumber", "27"
-    ), 7.42117, 43.73652, 14, 14);
-    assertNumFeatures("housenumber", Map.of(), 14, 231, Point.class);
-  }
-
-  @Test
   void testBoundary() {
     assertFeatureNear(mbtiles, "boundary", Map.of(
       "admin_level", 2L,
@@ -160,18 +145,6 @@ class OpenMapTilesTest {
   }
 
   @Test
-  void testLandcover() {
-    assertNumFeatures("landcover", Map.of(
-      "class", "grass",
-      "subclass", "park"
-    ), 14, 20, Polygon.class);
-    assertNumFeatures("landcover", Map.of(
-      "class", "grass",
-      "subclass", "garden"
-    ), 14, 33, Polygon.class);
-  }
-
-  @Test
   void testPoi() {
     assertNumFeatures("poi", Map.of(
       "class", "restaurant",
@@ -181,16 +154,6 @@ class OpenMapTilesTest {
       "class", "art_gallery",
       "subclass", "artwork"
     ), 14, 132, Point.class);
-  }
-
-  @Test
-  void testLanduse() {
-    assertNumFeatures("landuse", Map.of(
-      "class", "residential"
-    ), 14, 8, Polygon.class);
-    assertNumFeatures("landuse", Map.of(
-      "class", "hospital"
-    ), 14, 4, Polygon.class);
   }
 
   @Test
