@@ -1787,19 +1787,19 @@ class TransportationTest extends AbstractLayerTest {
   @Test
   void testMergesDisconnectedRoadFeaturesUnlessOneway() throws GeometryException {
     String layer = Transportation.LAYER_NAME;
-    testMergesLinestrings(Map.of("class", "motorway", "oneway", 0), layer, 10, 14);
-    testMergesLinestrings(Map.of("class", "motorway"), layer, 10, 14);
-    testDoesNotMergeLinestrings(Map.of("class", "motorway", "oneway", 1), layer, 10, 14);
-    testDoesNotMergeLinestrings(Map.of("class", "motorway", "oneway", -1), layer, 10, 14);
+    testMergesLinestrings(Map.of("class", "motorway", "oneway", 0, "rank", 1), layer, 10, 14);
+    testMergesLinestrings(Map.of("class", "motorway", "rank", 1), layer, 10, 14);
+    testDoesNotMergeLinestrings(Map.of("class", "motorway", "oneway", 1, "rank", 1), layer, 10, 14);
+    testDoesNotMergeLinestrings(Map.of("class", "motorway", "oneway", -1, "rank", 1), layer, 10, 14);
   }
 
   @Test
   void testMergesDisconnectedRoadFeaturesUnlessOnewayLong() throws GeometryException {
     String layer = Transportation.LAYER_NAME;
-    testMergesLinestrings(Map.of("class", "motorway", "oneway", 0L), layer, 10, 14);
-    testMergesLinestrings(Map.of("class", "motorway"), layer, 10, 14);
-    testDoesNotMergeLinestrings(Map.of("class", "motorway", "oneway", 1L), layer, 10, 14);
-    testDoesNotMergeLinestrings(Map.of("class", "motorway", "oneway", -1L), layer, 10, 14);
+    testMergesLinestrings(Map.of("class", "motorway", "oneway", 0L, "rank", 1), layer, 10, 14);
+    testMergesLinestrings(Map.of("class", "motorway", "rank", 1), layer, 10, 14);
+    testDoesNotMergeLinestrings(Map.of("class", "motorway", "oneway", 1L, "rank", 1), layer, 10, 14);
+    testDoesNotMergeLinestrings(Map.of("class", "motorway", "oneway", -1L, "rank", 1), layer, 10, 14);
   }
 
   @Test

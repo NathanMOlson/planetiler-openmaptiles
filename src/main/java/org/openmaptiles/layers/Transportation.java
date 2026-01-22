@@ -41,10 +41,12 @@ import static com.onthegomap.planetiler.util.MemoryEstimator.estimateSize;
 import static java.util.Map.entry;
 import static org.openmaptiles.util.Utils.*;
 
+import com.carrotsearch.hppc.LongIntMap;
 import com.onthegomap.planetiler.FeatureCollector;
 import com.onthegomap.planetiler.FeatureMerge;
 import com.onthegomap.planetiler.ForwardingProfile;
 import com.onthegomap.planetiler.VectorTile;
+import com.onthegomap.planetiler.collection.Hppc;
 import com.onthegomap.planetiler.config.PlanetilerConfig;
 import com.onthegomap.planetiler.expression.MultiExpression;
 import com.onthegomap.planetiler.geo.GeoUtils;
@@ -732,6 +734,17 @@ public class Transportation implements
     for (var item : merged) {
       item.tags().remove(LIMIT_MERGE_TAG);
     }
+
+    // infer the "rank" field from the order of features within each label grid square
+    LongIntMap groupCounts = Hppc.newLongIntHashMap();
+    for (VectorTile.Feature feature : merged) {
+      int gridrank = groupCounts.getOrDefault(feature.group(), 1);
+      groupCounts.put(feature.group(), gridrank + 1);
+      if (!feature.tags().containsKey(Fields.RANK)) {
+        feature.tags().put(Fields.RANK, gridrank);
+      }
+    }
+
     return merged;
   }
 
