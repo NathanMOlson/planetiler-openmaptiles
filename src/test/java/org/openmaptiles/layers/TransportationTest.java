@@ -760,27 +760,6 @@ class TransportationTest extends AbstractLayerTest {
   }
 
   @Test
-  void testBridgeConstruction() {
-    assertFeatures(14, List.of(), process(lineFeature(Map.of(
-      "highway", "construction",
-      "construction", "bridge",
-      "man_made", "bridge",
-      "layer", "1"
-    ))));
-    assertFeatures(14, List.of(Map.of(
-      "_layer", "transportation",
-      "class", "minor_construction",
-      "brunnel", "bridge",
-      "layer", 1L
-    )), process(closedWayFeature(Map.of(
-      "highway", "construction",
-      "construction", "bridge",
-      "man_made", "bridge",
-      "layer", "1"
-    ))));
-  }
-
-  @Test
   void testIgnoreManMadeWhenNotBridgeOrPier() {
     // https://github.com/onthegomap/planetiler/issues/69
     assertFeatures(14, List.of(), process(lineFeature(Map.of(
@@ -1781,7 +1760,7 @@ class TransportationTest extends AbstractLayerTest {
 
   @Test
   void testMergesDisconnectedRoadNameFeatures() throws GeometryException {
-    testMergesLinestrings(Map.of("class", "motorway"), TransportationName.LAYER_NAME, 10, 14);
+    testMergesLinestrings(Map.of("class", "motorway", "rank", 1), TransportationName.LAYER_NAME, 10, 14);
   }
 
   @Test
@@ -1935,114 +1914,6 @@ class TransportationTest extends AbstractLayerTest {
       ))));
   }
 
-  @Test
-  void testFerry() {
-    assertFeatures(10, List.of(Map.of(
-      "_layer", "transportation",
-      "class", "ferry",
-
-      "_minzoom", 4,
-      "_maxzoom", 14,
-      "_minpixelsize", 32d,
-      "_type", "line"
-    ), Map.of(
-      "_layer", "transportation_name",
-      "class", "ferry",
-      "name", "Boston - Provincetown Ferry",
-
-      "_minzoom", 12,
-      "_maxzoom", 14,
-      "_type", "line"
-    )), process(lineFeature(Map.of(
-      "route", "ferry",
-      "name", "Boston - Provincetown Ferry",
-      "motor_vehicle", "no",
-      "foot", "yes",
-      "bicycle", "yes"
-    ))));
-    assertFeatures(10, List.of(),
-      process(polygonFeature(Map.of(
-        "route", "ferry",
-        "name", "Boston - Provincetown Ferry",
-        "motor_vehicle", "no",
-        "foot", "yes",
-        "bicycle", "yes"
-      ))));
-  }
-
-  @Test
-  void testPiers() {
-    // area
-    assertFeatures(10, List.of(Map.of(
-      "_layer", "transportation",
-      "class", "pier",
-
-      "_minzoom", 13,
-      "_maxzoom", 14,
-      "_type", "polygon"
-    )), process(polygonFeature(Map.of(
-      "man_made", "pier"
-    ))));
-    assertFeatures(10, List.of(Map.of(
-      "_layer", "transportation",
-      "class", "pier",
-
-      "_minzoom", 13,
-      "_maxzoom", 14,
-      "_type", "line"
-    )), process(lineFeature(Map.of(
-      "man_made", "pier"
-    ))));
-  }
-
-  @Test
-  void testPedestrianArea() {
-    Map<String, Object> pedestrianArea = Map.of(
-      "_layer", "transportation",
-      "class", "path",
-      "subclass", "pedestrian",
-
-      "_minzoom", 13,
-      "_maxzoom", 14,
-      "_type", "polygon"
-    );
-    Map<String, Object> circularPath = Map.of(
-      "_layer", "transportation",
-      "class", "path",
-      "subclass", "pedestrian",
-
-      "_minzoom", 14,
-      "_maxzoom", 14,
-      "_type", "line"
-    );
-    assertFeatures(14, List.of(pedestrianArea), process(closedWayFeature(Map.of(
-      "highway", "pedestrian",
-      "area", "yes",
-      "foot", "yes"
-    ))));
-    assertFeatures(14, List.of(pedestrianArea), process(polygonFeature(Map.of(
-      "highway", "pedestrian",
-      "foot", "yes"
-    ))));
-    assertFeatures(14, List.of(circularPath), process(closedWayFeature(Map.of(
-      "highway", "pedestrian",
-      "foot", "yes"
-    ))));
-    assertFeatures(14, List.of(circularPath), process(closedWayFeature(Map.of(
-      "highway", "pedestrian",
-      "foot", "yes",
-      "area", "no"
-    ))));
-    // ignore underground pedestrian areas
-    assertFeatures(14, List.of(),
-      process(polygonFeature(Map.of(
-        "highway", "pedestrian",
-        "area", "yes",
-        "foot", "yes",
-        "layer", "-1"
-      ))));
-  }
-
   private int getWaySortKey(Map<String, Object> tags) {
     var iter = process(lineFeature(tags)).iterator();
     return iter.next().getSortKey();
@@ -2087,41 +1958,6 @@ class TransportationTest extends AbstractLayerTest {
       "_layer", "transportation",
       "class", "path"
     )), collector);
-  }
-
-  @Test
-  void testIssue86() {
-    assertFeatures(14, List.of(Map.of(
-      "_layer", "transportation",
-      "class", "bridge",
-      "_minzoom", 13,
-      "_type", "polygon"
-    )), process(closedWayFeature(Map.of(
-      "layer", "1",
-      "man_made", "bridge",
-      "service", "driveway"
-    ))));
-    assertFeatures(14, List.of(Map.of(
-      "_layer", "transportation",
-      "class", "bridge",
-      "_minzoom", 13,
-      "_type", "polygon"
-    )), process(closedWayFeature(Map.of(
-      "layer", "1",
-      "man_made", "bridge",
-      "service", "driveway",
-      "name", "name"
-    ))));
-    assertFeatures(14, List.of(Map.of(
-      "_layer", "transportation",
-      "class", "pier",
-      "_minzoom", 13,
-      "_type", "polygon"
-    )), process(closedWayFeature(Map.of(
-      "layer", "1",
-      "man_made", "pier",
-      "service", "driveway"
-    ))));
   }
 
   @Test

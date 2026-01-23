@@ -1228,6 +1228,9 @@ public class OpenMapTilesSchema {
       public static final String ROUTE_6_NAME = "route_6_name";
       /** 6th route concurrency colour. */
       public static final String ROUTE_6_COLOUR = "route_6_colour";
+      
+      /** Rank of the Label within one tile (starting at 1 that is the most important label). */
+      public static final String RANK = "rank";
     }
     /** Attribute values for map elements in the transportation_name layer. */
     final class FieldValues {

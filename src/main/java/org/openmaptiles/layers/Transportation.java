@@ -93,8 +93,6 @@ public class Transportation implements
   Tables.OsmAerialwayLinestring.Handler,
   Tables.OsmHighwayLinestring.Handler,
   Tables.OsmRailwayLinestring.Handler,
-  Tables.OsmShipwayLinestring.Handler,
-  Tables.OsmHighwayPolygon.Handler,
   OpenMapTilesProfile.NaturalEarthProcessor,
   ForwardingProfile.LayerPostProcessor,
   ForwardingProfile.OsmRelationPreprocessor,
@@ -677,41 +675,6 @@ public class Transportation implements
       .setSortKey(element.zOrder())
       .setMinPixelSize(0) // merge during post-processing, then limit by size
       .setMinZoom(12);
-  }
-
-  @Override
-  public void process(Tables.OsmShipwayLinestring element, FeatureCollector features) {
-    features.line(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
-      .setAttr(Fields.CLASS, element.shipway()) // "ferry"
-      // no subclass
-      .setAttr(Fields.SERVICE, service(element.service()))
-      .setAttr(Fields.RAMP, element.isRamp() ? 1L : null)
-      .setAttr(Fields.BRUNNEL, brunnel(element.isBridge(), element.isTunnel(), element.isFord()))
-      .setAttr(Fields.LAYER, nullIfLong(element.layer(), 0))
-      .setSortKey(element.zOrder())
-      .setMinPixelSize(0) // merge during post-processing, then limit by size
-      .setMinZoom(4)
-      .setMinPixelSizeBelowZoom(10, 32); // `sql_filter: ST_Length(...)` used in OpenMapTiles translates to 32px
-  }
-
-  @Override
-  public void process(Tables.OsmHighwayPolygon element, FeatureCollector features) {
-    String manMade = element.manMade();
-    if (isBridgeOrPier(manMade) ||
-      // only allow closed ways where area=yes, and multipolygons
-      // and ignore underground pedestrian areas
-      (!element.source().canBeLine() && element.layer() >= 0)) {
-      String highwayClass = highwayClass(element.highway(), element.publicTransport(), null, element.manMade());
-      if (highwayClass != null) {
-        features.polygon(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
-          .setAttr(Fields.CLASS, highwayClass)
-          .setAttr(Fields.SUBCLASS, highwaySubclass(highwayClass, element.publicTransport(), element.highway()))
-          .setAttr(Fields.BRUNNEL, brunnel("bridge".equals(manMade), false, false))
-          .setAttr(Fields.LAYER, nullIfLong(element.layer(), 0))
-          .setSortKey(element.zOrder())
-          .setMinZoom(13);
-      }
-    }
   }
 
   @Override

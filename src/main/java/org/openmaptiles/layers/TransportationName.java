@@ -43,6 +43,7 @@ import static org.openmaptiles.util.Utils.*;
 import com.carrotsearch.hppc.LongArrayList;
 import com.carrotsearch.hppc.LongByteMap;
 import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongIntMap;
 import com.carrotsearch.hppc.LongSet;
 import com.onthegomap.planetiler.FeatureCollector;
 import com.onthegomap.planetiler.FeatureMerge;
@@ -359,6 +360,16 @@ public class TransportationName implements
       for (var feature : result) {
         feature.tags().remove(LINK_TEMP_KEY);
         feature.tags().remove(RELATION_ID_TEMP_KEY);
+      }
+    }
+    
+    // infer the "rank" field from the order of features within each label grid square
+    LongIntMap groupCounts = Hppc.newLongIntHashMap();
+    for (VectorTile.Feature feature : result) {
+      int gridrank = groupCounts.getOrDefault(feature.group(), 1);
+      groupCounts.put(feature.group(), gridrank + 1);
+      if (!feature.tags().containsKey(Fields.RANK)) {
+        feature.tags().put(Fields.RANK, gridrank);
       }
     }
     return result;
