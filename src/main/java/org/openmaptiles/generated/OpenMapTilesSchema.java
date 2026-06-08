@@ -836,9 +836,10 @@ public class OpenMapTilesSchema {
        * </ul>
        */
       public static final String SURFACE = "surface";
-      
-      /** Rank of the road within one tile (starting at 1 that is the most important road). */
-      public static final String RANK = "rank";
+
+      public static final String NAME = "name";
+
+      public static final String REF = "ref";
     }
     /** Attribute values for map elements in the transportation layer. */
     final class FieldValues {

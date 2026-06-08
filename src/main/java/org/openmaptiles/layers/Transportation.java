@@ -63,6 +63,7 @@ import com.onthegomap.planetiler.util.ZoomFunction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -77,6 +78,7 @@ import org.locationtech.jts.geom.prep.PreparedGeometryFactory;
 import org.openmaptiles.OpenMapTilesProfile;
 import org.openmaptiles.generated.OpenMapTilesSchema;
 import org.openmaptiles.generated.Tables;
+import org.openmaptiles.util.OmtLanguageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -185,10 +187,12 @@ public class Transportation implements
   private final PlanetilerConfig config;
   private PreparedGeometry greatBritain = null;
   private PreparedGeometry ireland = null;
+  private final Translations translations;
 
   public Transportation(Translations translations, PlanetilerConfig config, Stats stats) {
     this.config = config;
     this.stats = stats;
+    this.translations = translations;
     z13Paths = config.arguments().getBoolean(
       "transportation_z13_paths",
       "transportation(_name) layer: show all paths on z13",
@@ -511,7 +515,18 @@ public class Transportation implements
 
       boolean expressway = element.expressway() && !"motorway".equals(highway) && !(element.isRamp() || highwayRamp);
 
+      double path_length = 0.0;
+      try {
+        path_length = element.source().worldGeometry().getLength();
+      } catch (GeometryException e) {
+        e.log(stats, "omt_highway",
+          "Unable to decode highway geometry for " + element.source().id());
+      }
+
       FeatureCollector.Feature feature = features.line(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
+        .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
+        .setAttr(Fields.REF, element.ref())
+        .setAttr("path_length", path_length)
         // main attributes at all zoom levels (used for grouping <= z8)
         .setAttr(Fields.CLASS, coalesce(minZoomAndNewClass.classOverride, highwayClass))
         .setAttr(Fields.SUBCLASS, highwaySubclass(highwayClass, element.publicTransport(), highway))
@@ -649,7 +664,19 @@ public class Transportation implements
       } else {
         minzoom = 14;
       }
+
+      double path_length = 0.0;
+      try {
+        path_length = element.source().worldGeometry().getLength();
+      } catch (GeometryException e) {
+        e.log(stats, "omt_highway",
+          "Unable to decode highway geometry for " + element.source().id());
+      }
+
       features.line(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
+        .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
+        .setAttr(Fields.REF, element.ref())
+        .setAttr("path_length", path_length)
         .setAttr(Fields.CLASS, clazz)
         .setAttr(Fields.SUBCLASS, railway)
         .setAttr(Fields.SERVICE, service(service))
@@ -664,7 +691,17 @@ public class Transportation implements
 
   @Override
   public void process(Tables.OsmAerialwayLinestring element, FeatureCollector features) {
+    double path_length = 0.0;
+    try {
+      path_length = element.source().worldGeometry().getLength();
+    } catch (GeometryException e) {
+      e.log(stats, "omt_highway",
+        "Unable to decode highway geometry for " + element.source().id());
+    }
+
     features.line(LAYER_NAME).setBufferPixels(BUFFER_SIZE)
+      .putAttrs(OmtLanguageUtils.getNames(element.source().tags(), translations))
+      .setAttr("path_length", path_length)
       .setAttr(Fields.CLASS, "aerialway")
       .setAttr(Fields.SUBCLASS, element.aerialway())
       .setAttr(Fields.SERVICE, service(element.service()))
@@ -682,10 +719,21 @@ public class Transportation implements
     double tolerance = config.tolerance(zoom);
     double minLength = coalesce(MIN_LENGTH.apply(zoom), 0).doubleValue();
 
+    Map<String, Double> path_lengths = new HashMap<>();
+    Map<String, Integer> highest_classes = new HashMap<>();
+
+    for (var item : items) {
+      String name = (String)item.tags().get(Fields.NAME);
+      double segment_length = (double)item.tags().getOrDefault("path_length", 0.0);
+      String segment_class = (String)item.tags().getOrDefault("name", "");
+      path_lengths.put(name, path_lengths.getOrDefault(name, 0.0) + segment_length);
+    }
+
     // don't merge road segments with oneway tag
     // TODO merge preserving oneway instead ignoring
     int onewayId = 1;
     for (var item : items) {
+      item.tags().put("path_length", path_lengths.get((String)item.tags().get(Fields.NAME)));
       var oneway = item.tags().get(Fields.ONEWAY);
       if (oneway instanceof Number n && ONEWAY_VALUES.contains(n.intValue())) {
         item.tags().put(LIMIT_MERGE_TAG, onewayId++);
@@ -696,16 +744,7 @@ public class Transportation implements
 
     for (var item : merged) {
       item.tags().remove(LIMIT_MERGE_TAG);
-    }
-
-    // infer the "rank" field from the order of features within each label grid square
-    LongIntMap groupCounts = Hppc.newLongIntHashMap();
-    for (VectorTile.Feature feature : merged) {
-      int gridrank = groupCounts.getOrDefault(feature.group(), 1);
-      groupCounts.put(feature.group(), gridrank + 1);
-      if (!feature.tags().containsKey(Fields.RANK)) {
-        feature.tags().put(Fields.RANK, gridrank);
-      }
+      item.tags().remove("path_length");
     }
 
     return merged;
