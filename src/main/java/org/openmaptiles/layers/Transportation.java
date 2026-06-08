@@ -721,30 +721,46 @@ public class Transportation implements
 
     Map<String, Double> path_lengths = new HashMap<>();
     Map<String, Integer> highest_classes = new HashMap<>();
+    Map<String, Integer> class_scores = new HashMap<>();
+    class_scores.put("motorway", 0);
+    class_scores.put("trunk", 1);
+    class_scores.put("primary", 2);
+    class_scores.put("secondary", 3);
+    class_scores.put("rail", 3);
+    class_scores.put("tertiary", 5);
+    class_scores.put("transit", 5);
+    class_scores.put("path", 7);
+    class_scores.put("service", 7);
+    class_scores.put("raceway", 7);
+    class_scores.put("busway", 7);
+    class_scores.put("bus_guideway", 11);
+    class_scores.put("ferry", 12);
+    class_scores.put("aerialway", 12);
+    class_scores.put("", 100);
 
     for (var item : items) {
       String name = (String)item.tags().get(Fields.NAME);
       double segment_length = (double)item.tags().getOrDefault("path_length", 0.0);
-      String segment_class = (String)item.tags().getOrDefault("name", "");
+      int class_score = class_scores.getOrDefault((String)item.tags().getOrDefault("name", ""), 99);
       path_lengths.put(name, path_lengths.getOrDefault(name, 0.0) + segment_length);
     }
+    path_lengths.put("", 0.0); // Treat unnamed paths as zero length
 
     // don't merge road segments with oneway tag
     // TODO merge preserving oneway instead ignoring
     int onewayId = 1;
     for (var item : items) {
-      item.tags().put("path_length", path_lengths.get((String)item.tags().get(Fields.NAME)));
       var oneway = item.tags().get(Fields.ONEWAY);
       if (oneway instanceof Number n && ONEWAY_VALUES.contains(n.intValue())) {
         item.tags().put(LIMIT_MERGE_TAG, onewayId++);
       }
+      item.tags().remove("path_length");
     }
 
     var merged = FeatureMerge.mergeLineStrings(items, minLength, tolerance, BUFFER_SIZE);
 
     for (var item : merged) {
       item.tags().remove(LIMIT_MERGE_TAG);
-      item.tags().remove("path_length");
     }
 
     return merged;
