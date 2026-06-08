@@ -720,7 +720,7 @@ public class Transportation implements
     double minLength = coalesce(MIN_LENGTH.apply(zoom), 0).doubleValue();
 
     Map<String, Double> path_lengths = new HashMap<>();
-    Map<String, Integer> highest_classes = new HashMap<>();
+    Map<String, Integer> most_important_classes = new HashMap<>();
     Map<String, Integer> class_scores = new HashMap<>();
     class_scores.put("motorway", 0);
     class_scores.put("trunk", 1);
@@ -739,12 +739,14 @@ public class Transportation implements
     class_scores.put("", 100);
 
     for (var item : items) {
-      String name = (String)item.tags().get(Fields.NAME);
+      String name = (String)item.tags().getOrDefault(Fields.NAME, "");
       double segment_length = (double)item.tags().getOrDefault("path_length", 0.0);
-      int class_score = class_scores.getOrDefault((String)item.tags().getOrDefault("name", ""), 99);
       path_lengths.put(name, path_lengths.getOrDefault(name, 0.0) + segment_length);
+      int class_score = class_scores.getOrDefault(name, 99);
+      most_important_classes.put(name, Math.min(class_score, most_important_classes.getOrDefault(name, 100)));
     }
     path_lengths.put("", 0.0); // Treat unnamed paths as zero length
+    most_important_classes.put("", 100); // Treat unnamed paths as unimportant
 
     // don't merge road segments with oneway tag
     // TODO merge preserving oneway instead ignoring
@@ -755,12 +757,17 @@ public class Transportation implements
         item.tags().put(LIMIT_MERGE_TAG, onewayId++);
       }
       item.tags().remove("path_length");
+      String name = (String)item.tags().getOrDefault(Fields.NAME, "");
+      item.tags().put("score", most_important_classes.getOrDefault(name, 100)*1.0e9 - path_lengths.getOrDefault(name, 0.0));
     }
 
     var merged = FeatureMerge.mergeLineStrings(items, minLength, tolerance, BUFFER_SIZE);
 
+    merged.sort(Comparator.comparing(p -> (double)p.tags().get("score")));
+
     for (var item : merged) {
       item.tags().remove(LIMIT_MERGE_TAG);
+      item.tags().remove("score");
     }
 
     return merged;
